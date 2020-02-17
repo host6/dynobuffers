@@ -1300,60 +1300,73 @@ func MapSliceToScheme(mapSlice yaml.MapSlice) (*Scheme, error) {
 	return res, nil
 }
 
-// StructToScheme creates new Scheme by provided struct.
+// SchemeFromStruct creates new Scheme by provided struct.
 // all types are supported
 // Exported fields are considered as mandatory
-func StructToScheme(strct interface{}) (s *Scheme, err error) {
+func SchemeFromStruct(strct interface{}) (s *Scheme, err error) {
 	v := reflect.ValueOf(strct)
 	t := reflect.TypeOf(strct)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+		v = v.Elem()
+	}
 	if t.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("struct expected, #v provided", strct)
+		return nil, fmt.Errorf("struct expected, %v provided", strct)
 	}
 
 	s = NewScheme()
 
-
-	for i := 0; i<t.NumField(); i++ {
+	for i := 0; i < t.NumField(); i++ {
 		var ft FieldType
 		f := t.Field(i)
 		ft, isArray := getFieldDesc(t, i)
 		if ft == FieldTypeUnspecified {
 			return nil, fmt.Errorf("unsupported field type: %s %s", f.Name, f.Type.Kind())
 		}
-		s.AddFieldC(f.Name, ft, nil, v.Field(i).CanInterface(), isArray)
+		isMandatory := v.Field(i).CanInterface()
+		var nested *Scheme
+
+		if ft == FieldTypeObject {
+			nested, err = SchemeFromStruct(v.Interface)
+		}
+		s.AddFieldC(f.Name, ft, nested, isMandatory, isArray)
 	}
 
-	return s, nil
-
+	return 
 }
 
 func getFieldDesc(strct reflect.Type, numField int) (ft FieldType, isArray bool) {
 	isArray = false
 	f := strct.Field(numField)
-	switch f.Type.Kind() {
+	ft, isArray = typeToFT(f.Type)
+	return
+}
+
+func typeToFT(t reflect.Type) (ft FieldType, isArray bool) {
+	isArray = false
+	switch t.Kind() {
 	case reflect.Int32:
-		ft = FieldTypeInt
+		return FieldTypeInt, false
 	case reflect.Int64:
-		ft = FieldTypeLong
+		return FieldTypeLong, false
 	case reflect.Float32:
-		ft = FieldTypeFloat
+		return FieldTypeFloat, false
 	case reflect.Float64:
-		ft = FieldTypeDouble
+		return FieldTypeDouble, false
 	case reflect.Bool:
-		ft = FieldTypeBool
+		return FieldTypeBool, false
 	case reflect.String:
-		ft = FieldTypeString
+		return FieldTypeString, false
 	case reflect.Uint8:
-		ft = FieldTypeByte
-	case reflect.Struct :
-		ft = FieldTypeObject
+		return FieldTypeByte, false
+	case reflect.Struct:
+		return FieldTypeObject, false
 	case reflect.Slice, reflect.Array:
-		isArray = true
-		ft, _ = getFieldDesc(f.Type.Elem(), numField)
+		ft, _ :=typeToFT(t.Elem())
+		return ft, true
 	default:
 		return FieldTypeUnspecified, false
 	}
-	return
 }
 
 func fieldPropsFromYaml(yamlStr string) (fieldName string, isMandatory bool, isArray bool) {

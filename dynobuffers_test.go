@@ -1628,3 +1628,28 @@ func TestObjectsCopy(t *testing.T) {
 	tab.Bytes = bytes
 	tab.Pos = flatbuffers.GetUOffsetT(bytes)
 }
+
+type tx struct {
+	i int32
+	l int64
+	f float32
+	d float64
+	s string
+	bl bool
+	bt byte
+	is []int32
+	ls []int64
+	fs []float32
+	ds []float64
+	ss []string
+	bls []bool
+	bts []byte
+}
+
+func TestSchemeFromStruct(t *testing.T) {
+	x := &tx{}
+
+	s, err := SchemeFromStruct(x)
+	require.Nil(t, err)
+	fmt.Println(s)
+}
