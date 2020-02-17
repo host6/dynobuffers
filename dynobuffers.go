@@ -1300,6 +1300,62 @@ func MapSliceToScheme(mapSlice yaml.MapSlice) (*Scheme, error) {
 	return res, nil
 }
 
+// StructToScheme creates new Scheme by provided struct.
+// all types are supported
+// Exported fields are considered as mandatory
+func StructToScheme(strct interface{}) (s *Scheme, err error) {
+	v := reflect.ValueOf(strct)
+	t := reflect.TypeOf(strct)
+	if t.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("struct expected, #v provided", strct)
+	}
+
+	s = NewScheme()
+
+
+	for i := 0; i<t.NumField(); i++ {
+		var ft FieldType
+		f := t.Field(i)
+		ft, isArray := getFieldDesc(t, i)
+		if ft == FieldTypeUnspecified {
+			return nil, fmt.Errorf("unsupported field type: %s %s", f.Name, f.Type.Kind())
+		}
+		s.AddFieldC(f.Name, ft, nil, v.Field(i).CanInterface(), isArray)
+	}
+
+	return s, nil
+
+}
+
+func getFieldDesc(strct reflect.Type, numField int) (ft FieldType, isArray bool) {
+	isArray = false
+	f := strct.Field(numField)
+	switch f.Type.Kind() {
+	case reflect.Int32:
+		ft = FieldTypeInt
+	case reflect.Int64:
+		ft = FieldTypeLong
+	case reflect.Float32:
+		ft = FieldTypeFloat
+	case reflect.Float64:
+		ft = FieldTypeDouble
+	case reflect.Bool:
+		ft = FieldTypeBool
+	case reflect.String:
+		ft = FieldTypeString
+	case reflect.Uint8:
+		ft = FieldTypeByte
+	case reflect.Struct :
+		ft = FieldTypeObject
+	case reflect.Slice, reflect.Array:
+		isArray = true
+		ft, _ = getFieldDesc(f.Type.Elem(), numField)
+	default:
+		return FieldTypeUnspecified, false
+	}
+	return
+}
+
 func fieldPropsFromYaml(yamlStr string) (fieldName string, isMandatory bool, isArray bool) {
 	isMandatory = unicode.IsUpper(rune(yamlStr[0]))
 
