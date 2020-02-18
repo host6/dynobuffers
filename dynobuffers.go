@@ -1311,6 +1311,7 @@ func SchemeFromStruct(strct interface{}) (s *Scheme, err error) {
 		v = v.Elem()
 	}
 	if t.Kind() != reflect.Struct {
+		fmt.Println(t)
 		return nil, fmt.Errorf("struct expected, %v provided", strct)
 	}
 
@@ -1329,10 +1330,16 @@ func SchemeFromStruct(strct interface{}) (s *Scheme, err error) {
 		if ft == FieldTypeObject {
 			nested, err = SchemeFromStruct(v.Interface)
 		}
-		s.AddFieldC(f.Name, ft, nested, isMandatory, isArray)
+		fieldName := f.Name
+		if isMandatory {
+			fnBytes := []byte(fieldName)
+			fnBytes[0] = []byte(strings.ToLower(string(fnBytes[0])))[0]
+			fieldName = string(fnBytes)
+		}
+		s.AddFieldC(fieldName, ft, nested, isMandatory, isArray)
 	}
 
-	return 
+	return
 }
 
 func getFieldDesc(strct reflect.Type, numField int) (ft FieldType, isArray bool) {
@@ -1346,27 +1353,28 @@ func typeToFT(t reflect.Type) (ft FieldType, isArray bool) {
 	isArray = false
 	switch t.Kind() {
 	case reflect.Int32:
-		return FieldTypeInt, false
+		ft = FieldTypeInt
 	case reflect.Int64:
-		return FieldTypeLong, false
+		ft = FieldTypeLong
 	case reflect.Float32:
-		return FieldTypeFloat, false
+		ft = FieldTypeFloat
 	case reflect.Float64:
-		return FieldTypeDouble, false
+		ft = FieldTypeDouble
 	case reflect.Bool:
-		return FieldTypeBool, false
+		ft = FieldTypeBool
 	case reflect.String:
-		return FieldTypeString, false
+		ft = FieldTypeString
 	case reflect.Uint8:
-		return FieldTypeByte, false
+		ft = FieldTypeByte
 	case reflect.Struct:
-		return FieldTypeObject, false
+		ft = FieldTypeObject
 	case reflect.Slice, reflect.Array:
-		ft, _ :=typeToFT(t.Elem())
-		return ft, true
+		isArray = true
+		ft, _ = typeToFT(t.Elem())
 	default:
-		return FieldTypeUnspecified, false
+		ft = FieldTypeUnspecified
 	}
+	return
 }
 
 func fieldPropsFromYaml(yamlStr string) (fieldName string, isMandatory bool, isArray bool) {

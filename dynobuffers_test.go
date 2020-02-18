@@ -1629,27 +1629,77 @@ func TestObjectsCopy(t *testing.T) {
 	tab.Pos = flatbuffers.GetUOffsetT(bytes)
 }
 
+type nes struct {
+	nes int32
+}
+
 type tx struct {
-	i int32
+	I int32
 	l int64
 	f float32
 	d float64
 	s string
 	bl bool
 	bt byte
-	is []int32
+	nes *nes
+	Is []int32
 	ls []int64
 	fs []float32
 	ds []float64
 	ss []string
 	bls []bool
 	bts []byte
+	nesArr []*nes
+}
+
+type structUnsupported struct {
+	f int
 }
 
 func TestSchemeFromStruct(t *testing.T) {
-	x := &tx{}
-
-	s, err := SchemeFromStruct(x)
+	yml := `
+I: int
+l: long
+f: float
+d: double
+s: string
+bl: bool
+bt: byte
+nes: 
+  i: int
+Is..: int
+ls..: long
+fs..: float
+ds..: double
+ss..: string
+bls..: bool
+bts..: byte
+nesArr..:
+  i: int
+`
+	expectedS, err := YamlToScheme(yml)
 	require.Nil(t, err)
-	fmt.Println(s)
+
+	// non-struct provided -> error
+	s, err := SchemeFromStruct(5)
+	require.Nil(t, s)
+	require.NotNil(t, err)
+
+	// unsupported field type -> error
+	s, err = SchemeFromStruct(structUnsupported{})
+	require.Nil(t, s)
+	require.NotNil(t, err)
+	
+	// ptr struct
+	x := &tx{}
+	s, err = SchemeFromStruct(x)
+	require.Nil(t, err)
+	require.Equal(t, expectedS, s)
+
+	// non-ptr struct
+	x1 := tx{}
+	s, err = SchemeFromStruct(x1)
+	require.Nil(t, err)
+	require.Equal(t, expectedS, s)
+
 }
