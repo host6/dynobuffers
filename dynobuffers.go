@@ -1304,31 +1304,39 @@ func MapSliceToScheme(mapSlice yaml.MapSlice) (*Scheme, error) {
 // all types are supported
 // Exported fields are considered as mandatory
 func SchemeFromStruct(strct interface{}) (s *Scheme, err error) {
-	v := reflect.ValueOf(strct)
-	t := reflect.TypeOf(strct)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-		v = v.Elem()
+	strctValue := reflect.ValueOf(strct)
+	strctType := reflect.TypeOf(strct)
+	if strctType.Kind() == reflect.Ptr {
+		strctType = strctType.Elem()
+		strctValue = strctValue.Elem()
 	}
-	if t.Kind() != reflect.Struct {
-		fmt.Println(t)
+	if strctType.Kind() != reflect.Struct {
+		fmt.Println(strctType.Kind())
 		return nil, fmt.Errorf("struct expected, %v provided", strct)
 	}
 
-	s = NewScheme()
+	return processStrcutType(strctType, strctValue)
+}
 
-	for i := 0; i < t.NumField(); i++ {
+func processStrcutType(strctType reflect.Type, strctValue reflect.Value) (s *Scheme, err error) {
+	s = NewScheme()
+	for i := 0; i < strctType.NumField(); i++ {
 		var ft FieldType
-		f := t.Field(i)
-		ft, isArray := getFieldDesc(t, i)
+		f := strctType.Field(i)
+
+		ft, isArray := getFieldDesc(f, f.Type)
 		if ft == FieldTypeUnspecified {
+			fmt.Println(strctType.Kind())
 			return nil, fmt.Errorf("unsupported field type: %s %s", f.Name, f.Type.Kind())
 		}
-		isMandatory := v.Field(i).CanInterface()
+		isMandatory := strctValue.Field(i).CanInterface()
 		var nested *Scheme
 
 		if ft == FieldTypeObject {
-			nested, err = SchemeFromStruct(v.Interface)
+			nested, err = processStrcutType(f.Type, strctValue.Field(i))
+			if err != nil {
+				return nil, err
+			}
 		}
 		fieldName := f.Name
 		if isMandatory {
@@ -1338,19 +1346,22 @@ func SchemeFromStruct(strct interface{}) (s *Scheme, err error) {
 		}
 		s.AddFieldC(fieldName, ft, nested, isMandatory, isArray)
 	}
+	return s, nil
+}
 
+func getFieldDesc(f reflect.StructField, fieldType reflect.Type) (ft FieldType, isArray bool) {
+	if fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Array {
+		isArray = true
+		fieldType = fieldType.Elem()
+	}
+	if fieldType.Kind() == reflect.Ptr {
+		fieldType = fieldType.Elem()
+	}
+	ft = typeToFT(fieldType)
 	return
 }
 
-func getFieldDesc(strct reflect.Type, numField int) (ft FieldType, isArray bool) {
-	isArray = false
-	f := strct.Field(numField)
-	ft, isArray = typeToFT(f.Type)
-	return
-}
-
-func typeToFT(t reflect.Type) (ft FieldType, isArray bool) {
-	isArray = false
+func typeToFT(t reflect.Type) (ft FieldType) {
 	switch t.Kind() {
 	case reflect.Int32:
 		ft = FieldTypeInt
@@ -1368,10 +1379,8 @@ func typeToFT(t reflect.Type) (ft FieldType, isArray bool) {
 		ft = FieldTypeByte
 	case reflect.Struct:
 		ft = FieldTypeObject
-	case reflect.Slice, reflect.Array:
-		isArray = true
-		ft, _ = typeToFT(t.Elem())
 	default:
+		fmt.Println(t.Kind())
 		ft = FieldTypeUnspecified
 	}
 	return
