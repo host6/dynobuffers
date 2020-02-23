@@ -1329,11 +1329,25 @@ func processStrcutType(strctType reflect.Type, strctValue reflect.Value) (s *Sch
 			fmt.Println(strctType.Kind())
 			return nil, fmt.Errorf("unsupported field type: %s %s", f.Name, f.Type.Kind())
 		}
-		isMandatory := strctValue.Field(i).CanInterface()
+		fmt.Println(i)
+		isMandatory := false
+		if strctValue.Kind() == reflect.Ptr {
+			isMandatory = reflect.Indirect(strctValue).Field(i).CanSet()
+		} else {
+			isMandatory = strctValue.Field(i).CanSet()
+		}
 		var nested *Scheme
 
 		if ft == FieldTypeObject {
-			nested, err = processStrcutType(f.Type, strctValue.Field(i))
+			nestedType := f.Type
+			nestedValue := strctValue.Field(i)
+			if nestedType.Kind() == reflect.Ptr {
+				nestedType = nestedType.Elem()
+				nestedValue = reflect.Indirect(nestedValue).Field(i)
+			}
+
+			nested, err = processStrcutType(nestedType, nestedValue)
+			// nested, err1 = SchemeFromStruct(strctValue.Field(i).Interface())
 			if err != nil {
 				return nil, err
 			}
