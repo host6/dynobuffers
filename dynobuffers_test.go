@@ -1630,25 +1630,25 @@ func TestObjectsCopy(t *testing.T) {
 }
 
 type nes struct {
-	nes int32
+	nesI int32
 }
 
 type tx struct {
-	I int32
-	l int64
-	f float32
-	d float64
-	s string
-	bl bool
-	bt byte
-	nes *nes
-	Is []int32
-	ls []int64
-	fs []float32
-	ds []float64
-	ss []string
-	bls []bool
-	bts []byte
+	I      int32
+	l      int64
+	f      float32
+	d      float64
+	s      string
+	bl     bool
+	bt     byte
+	nes    *nes
+	Is     []int32
+	ls     []int64
+	fs     []float32
+	ds     []float64
+	ss     []string
+	bls    []bool
+	bts    []byte
 	nesArr []*nes
 }
 
@@ -1666,7 +1666,7 @@ s: string
 bl: bool
 bt: byte
 nes: 
-  i: int
+  nesI: int
 Is..: int
 ls..: long
 fs..: float
@@ -1675,7 +1675,7 @@ ss..: string
 bls..: bool
 bts..: byte
 nesArr..:
-  i: int
+  nesI: int
 `
 	expectedS, err := YamlToScheme(yml)
 	require.Nil(t, err)
@@ -1689,7 +1689,7 @@ nesArr..:
 	s, err = SchemeFromStruct(structUnsupported{})
 	require.Nil(t, s)
 	require.NotNil(t, err)
-	
+
 	// ptr struct
 	x := &tx{}
 	s, err = SchemeFromStruct(x)
@@ -1701,5 +1701,4 @@ nesArr..:
 	s, err = SchemeFromStruct(x1)
 	require.Nil(t, err)
 	require.Equal(t, expectedS, s)
-
 }

@@ -1301,8 +1301,9 @@ func MapSliceToScheme(mapSlice yaml.MapSlice) (*Scheme, error) {
 }
 
 // SchemeFromStruct creates new Scheme by provided struct.
-// all types are supported
-// Exported fields are considered as mandatory
+// Mandatory = is pointer field
+// not a struct or not pointer to struct -> error
+// unsupported type -> error
 func SchemeFromStruct(strct interface{}) (s *Scheme, err error) {
 	strctValue := reflect.ValueOf(strct)
 	strctType := reflect.TypeOf(strct)
@@ -1311,7 +1312,6 @@ func SchemeFromStruct(strct interface{}) (s *Scheme, err error) {
 		strctValue = strctValue.Elem()
 	}
 	if strctType.Kind() != reflect.Struct {
-		fmt.Println(strctType.Kind())
 		return nil, fmt.Errorf("struct expected, %v provided", strct)
 	}
 
@@ -1326,38 +1326,48 @@ func processStrcutType(strctType reflect.Type, strctValue reflect.Value) (s *Sch
 
 		ft, isArray := getFieldDesc(f, f.Type)
 		if ft == FieldTypeUnspecified {
-			fmt.Println(strctType.Kind())
 			return nil, fmt.Errorf("unsupported field type: %s %s", f.Name, f.Type.Kind())
 		}
-		fmt.Println(i)
-		isMandatory := false
-		if strctValue.Kind() == reflect.Ptr {
-			isMandatory = reflect.Indirect(strctValue).Field(i).CanSet()
-		} else {
-			isMandatory = strctValue.Field(i).CanSet()
-		}
+		isMandatory := strctValue.Field(i).CanInterface()
 		var nested *Scheme
-
-		if ft == FieldTypeObject {
-			nestedType := f.Type
-			nestedValue := strctValue.Field(i)
-			if nestedType.Kind() == reflect.Ptr {
-				nestedType = nestedType.Elem()
-				nestedValue = reflect.Indirect(nestedValue).Field(i)
-			}
-
-			nested, err = processStrcutType(nestedType, nestedValue)
-			// nested, err1 = SchemeFromStruct(strctValue.Field(i).Interface())
-			if err != nil {
-				return nil, err
-			}
-		}
 		fieldName := f.Name
 		if isMandatory {
 			fnBytes := []byte(fieldName)
 			fnBytes[0] = []byte(strings.ToLower(string(fnBytes[0])))[0]
 			fieldName = string(fnBytes)
 		}
+		if ft == FieldTypeObject {
+			nestedType := f.Type
+			nestedValue := strctValue.Field(i)
+			if nestedType.Kind() == reflect.Ptr {
+				nestedType = nestedType.Elem()
+				if isArray {
+					nestedType = nestedType.Elem()
+				}
+				if nestedValue.IsZero() {
+					nestedValue = reflect.New(nestedType).Elem()
+				} else {
+					nestedValue = nestedValue.Elem()
+				}
+			}
+			if isArray {
+				nestedType = nestedType.Elem()
+				if nestedType.Kind() == reflect.Ptr {
+					nestedType = nestedType.Elem()
+				}
+				if nestedValue.IsZero() {
+					nestedValue = reflect.New(nestedType).Elem()
+				} else {
+					nestedValue = nestedValue.Elem()
+				}
+			}
+			nested, err = processStrcutType(nestedType, nestedValue)
+			nested.Name = fieldName
+			if err != nil {
+				return nil, err
+			}
+		}
+		
 		s.AddFieldC(fieldName, ft, nested, isMandatory, isArray)
 	}
 	return s, nil
@@ -1394,7 +1404,6 @@ func typeToFT(t reflect.Type) (ft FieldType) {
 	case reflect.Struct:
 		ft = FieldTypeObject
 	default:
-		fmt.Println(t.Kind())
 		ft = FieldTypeUnspecified
 	}
 	return
