@@ -864,15 +864,14 @@ func (b *Buffer) encodeArray(bl *flatbuffers.Builder, f *Field, value interface{
 		return bl.CreateByteVector(arr), nil
 	case FieldTypeString:
 		var arr []string
-		switch value.(type) {
+		switch val := value.(type) {
 		case []string:
 			// Set("", []string) was called
-			arr = value.([]string)
+			arr = val
 		case []interface{}:
 			// came from JSON
-			intfs := value.([]interface{})
-			arr = make([]string, len(intfs))
-			for i, intf := range intfs {
+			arr = make([]string, len(val))
+			for i, intf := range val {
 				stringVal, ok := intf.(string)
 				if !ok {
 					return 0, fmt.Errorf("[]byte required but %#v provided for field %s", value, f.QualifiedName())
@@ -898,10 +897,9 @@ func (b *Buffer) encodeArray(bl *flatbuffers.Builder, f *Field, value interface{
 		return bl.EndVector(len(arr)), nil
 	default:
 		nestedUOffsetTs := []flatbuffers.UOffsetT{}
-		switch value.(type) {
+		switch arr := value.(type) {
 		case []*Buffer:
 			// explicit Set\Append("", []*Buffer) was called
-			arr := value.([]*Buffer)
 			for i := 0; i < len(arr); i++ {
 				if arr[i] == nil {
 					return 0, fmt.Errorf("nil element of array field %s is provided. Nils are not supported for array elements", f.QualifiedName())
@@ -921,7 +919,6 @@ func (b *Buffer) encodeArray(bl *flatbuffers.Builder, f *Field, value interface{
 				}
 			}
 		case *ObjectArray:
-			arr := value.(*ObjectArray)
 			for arr.Next() {
 				if storeObjectsAsBytes {
 					nestedBytes, _ := arr.Buffer.ToBytes()
@@ -931,7 +928,6 @@ func (b *Buffer) encodeArray(bl *flatbuffers.Builder, f *Field, value interface{
 					nestedUOffsetTs = append(nestedUOffsetTs, nestedUOffsetT)
 				}
 			}
-
 		default:
 			return 0, fmt.Errorf("%#v provided for field %s is not an array of nested objects", value, f.QualifiedName())
 		}
@@ -1000,65 +996,65 @@ func isFloat64ValueFitsIntoField(f *Field, float64Src float64) bool {
 }
 
 func encodeFixedSizeValue(bl *flatbuffers.Builder, f *Field, value interface{}) bool {
-	switch res := value.(type) {
+	switch val := value.(type) {
 	case bool:
 		if f.Ft != FieldTypeBool {
 			return false
 		}
-		bl.PrependBool(res)
+		bl.PrependBool(val)
 	case float64:
-		if !isFloat64ValueFitsIntoField(f, res) {
+		if !isFloat64ValueFitsIntoField(f, val) {
 			return false
 		}
 		switch f.Ft {
 		case FieldTypeInt:
-			bl.PrependInt32(int32(res))
+			bl.PrependInt32(int32(val))
 		case FieldTypeLong:
-			bl.PrependInt64(int64(res))
+			bl.PrependInt64(int64(val))
 		case FieldTypeFloat:
-			bl.PrependFloat32(float32(res))
+			bl.PrependFloat32(float32(val))
 		case FieldTypeDouble:
-			bl.PrependFloat64(res)
+			bl.PrependFloat64(val)
 		default:
-			bl.PrependByte(byte(res))
+			bl.PrependByte(byte(val))
 		}
 	case float32:
 		if f.Ft != FieldTypeFloat {
 			return false
 		}
-		bl.PrependFloat32(res)
+		bl.PrependFloat32(val)
 	case int64:
 		if f.Ft != FieldTypeLong {
 			return false
 		}
-		bl.PrependInt64(res)
+		bl.PrependInt64(val)
 	case int32:
 		if f.Ft != FieldTypeInt {
 			return false
 		}
-		bl.PrependInt32(res)
+		bl.PrependInt32(val)
 	case byte:
 		if f.Ft != FieldTypeByte {
 			return false
 		}
-		bl.PrependByte(res)
+		bl.PrependByte(val)
 	case int:
 		switch f.Ft {
 		case FieldTypeInt:
-			if math.Abs(float64(res)) > math.MaxInt32 {
+			if math.Abs(float64(val)) > math.MaxInt32 {
 				return false
 			}
-			bl.PrependInt32(int32(res))
+			bl.PrependInt32(int32(val))
 		case FieldTypeLong:
-			if math.Abs(float64(res)) > math.MaxInt64 {
+			if math.Abs(float64(val)) > math.MaxInt64 {
 				return false
 			}
-			bl.PrependInt64(int64(res))
+			bl.PrependInt64(int64(val))
 		default:
-			if math.Abs(float64(res)) > 255 {
+			if math.Abs(float64(val)) > 255 {
 				return false
 			}
-			bl.PrependByte(byte(res))
+			bl.PrependByte(byte(val))
 		}
 	default:
 		return false
