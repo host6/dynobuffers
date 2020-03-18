@@ -1000,67 +1000,65 @@ func isFloat64ValueFitsIntoField(f *Field, float64Src float64) bool {
 }
 
 func encodeFixedSizeValue(bl *flatbuffers.Builder, f *Field, value interface{}) bool {
-	switch value.(type) {
+	switch res := value.(type) {
 	case bool:
 		if f.Ft != FieldTypeBool {
 			return false
 		}
-		bl.PrependBool(value.(bool))
+		bl.PrependBool(res)
 	case float64:
-		float64Src := value.(float64)
-		if !isFloat64ValueFitsIntoField(f, float64Src) {
+		if !isFloat64ValueFitsIntoField(f, res) {
 			return false
 		}
 		switch f.Ft {
 		case FieldTypeInt:
-			bl.PrependInt32(int32(float64Src))
+			bl.PrependInt32(int32(res))
 		case FieldTypeLong:
-			bl.PrependInt64(int64(float64Src))
+			bl.PrependInt64(int64(res))
 		case FieldTypeFloat:
-			bl.PrependFloat32(float32(float64Src))
+			bl.PrependFloat32(float32(res))
 		case FieldTypeDouble:
-			bl.PrependFloat64(float64Src)
+			bl.PrependFloat64(res)
 		default:
-			bl.PrependByte(byte(float64Src))
+			bl.PrependByte(byte(res))
 		}
 	case float32:
 		if f.Ft != FieldTypeFloat {
 			return false
 		}
-		bl.PrependFloat32(value.(float32))
+		bl.PrependFloat32(res)
 	case int64:
 		if f.Ft != FieldTypeLong {
 			return false
 		}
-		bl.PrependInt64(value.(int64))
+		bl.PrependInt64(res)
 	case int32:
 		if f.Ft != FieldTypeInt {
 			return false
 		}
-		bl.PrependInt32(value.(int32))
+		bl.PrependInt32(res)
 	case byte:
 		if f.Ft != FieldTypeByte {
 			return false
 		}
-		bl.PrependByte(value.(byte))
+		bl.PrependByte(res)
 	case int:
-		intVal := value.(int)
 		switch f.Ft {
 		case FieldTypeInt:
-			if math.Abs(float64(intVal)) > math.MaxInt32 {
+			if math.Abs(float64(res)) > math.MaxInt32 {
 				return false
 			}
-			bl.PrependInt32(int32(intVal))
+			bl.PrependInt32(int32(res))
 		case FieldTypeLong:
-			if math.Abs(float64(intVal)) > math.MaxInt64 {
+			if math.Abs(float64(res)) > math.MaxInt64 {
 				return false
 			}
-			bl.PrependInt64(int64(intVal))
+			bl.PrependInt64(int64(res))
 		default:
-			if math.Abs(float64(intVal)) > 255 {
+			if math.Abs(float64(res)) > 255 {
 				return false
 			}
-			bl.PrependByte(byte(intVal))
+			bl.PrependByte(byte(res))
 		}
 	default:
 		return false
