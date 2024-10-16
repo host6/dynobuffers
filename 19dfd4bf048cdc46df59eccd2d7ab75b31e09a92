@@ -1,1 +1,3 @@
 Resolves issue 'getByUOffsetT: return always single nested object if it was created'
+
+Resolves #73 getByUOffsetT: return always single nested object if it was created
