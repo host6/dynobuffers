@@ -1,0 +1,1 @@
+Resolves issue 'toBytes: always flush everything, do not check modification flag'
