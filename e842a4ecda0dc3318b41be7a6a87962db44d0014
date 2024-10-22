@@ -1,1 +1,3 @@
 Resolves issue 'toBytes: always flush everything, do not check modification flag'
+
+Resolves #75 toBytes: always flush everything, do not check modification flag
