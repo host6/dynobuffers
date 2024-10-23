@@ -1,1 +1,3 @@
 Resolves issue 'eliminate `fieldToBytes.isReleased`'
+
+Resolves #78 eliminate `fieldToBytes.isReleased`
