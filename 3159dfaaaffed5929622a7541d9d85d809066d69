@@ -1,1 +1,3 @@
 Resolves issue 'make Buffer.toRelease be typed'
+
+Resolves #80 make Buffer.toRelease be typed
