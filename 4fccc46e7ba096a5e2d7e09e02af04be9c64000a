@@ -1,0 +1,1 @@
+Resolves issue 'rename fieldsToBytes.IsEffectivelyNil -> .isValueEmpty'
