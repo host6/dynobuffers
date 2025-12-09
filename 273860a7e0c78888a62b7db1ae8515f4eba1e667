@@ -1,3 +1,5 @@
 [AIR-2461] dynobuffers: use ci.yml instead of ci_reuse_go.yml
 
 https://untill.atlassian.net/browse/AIR-2461
+
+{"version":"1.0","github_issue_url":"","jira_ticket_url":"https://untill.atlassian.net/browse/AIR-2461","branch_type":2}
