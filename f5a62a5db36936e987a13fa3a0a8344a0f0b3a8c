@@ -1,3 +1,5 @@
 Resolves issue 'use REPOREADING_TOKEN secret on CI workflow'
 
 Resolves #93 use REPOREADING_TOKEN secret on CI workflow
+
+{"version":"1.0","github_issue_url":"https://github.com/untillpro/dynobuffers/issues/93","jira_ticket_url":"","branch_type":2}
