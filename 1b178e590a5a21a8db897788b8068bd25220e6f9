@@ -1,1 +1,3 @@
 Resolves issue 'use REPOREADING_TOKEN secret on CI workflow'
+
+Resolves #93 use REPOREADING_TOKEN secret on CI workflow
